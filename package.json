@@ -1,7 +1,7 @@
 {
   "name": "aa-discord-bot",
-  "version": "1.0.0",
-  "description": "Discord-based bot for determining if a player is hostile based on their group affiliation or not, as well as searching INARA, EDSM, and more things, soon.",
+  "version": "2.4.1",
+  "description": "Discord bot for determining if a player is hostile based on their group affiliation or not, as well as searching INARA, EDSM, and more things, soon.",
   "main": "aa-discord-bot.js",
   "dependencies": {
     "csvjson": "^4.1.3",
@@ -10,10 +10,11 @@
     "jsonfile": "^3.0.0",
     "mathjs": "^3.13.1",
     "request": "^2.81.0"
+    "config": "^1.26.1"
   },
   "devDependencies": {},
   "scripts": {
-    "start": "node aa-discord-bot.js",
+    "start": "start.sh",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

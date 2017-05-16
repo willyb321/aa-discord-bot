@@ -12,12 +12,38 @@ Running `npm install` in the bot's running directory should get you up and runni
  
 ## Configuration
 
-Edit the configuration section of the bot's main script (this will be converted to https://www.npmjs.com/package/config -style configuration sometime later)
+Edit config/default.js. Most of it should be self explanatory, except for the format for your spreadsheets.
+
+#### For lists:
+Each CMDR should have their own row, with the columns being as such:
+
+Timestamp, CMDR, Crimes, Group, ID, Evidence
+
+They can be in any order, but every list needs to have those six columns.
+
+Just put "Friendly", "Ally", or "Neutral" in the Crimes column for various CMDRs to get a proper alignment emoji returned from a sheet marked as friendly
+
+#### For rosters:
+
+List them by columns, group name on top. ex:
+
+Group1, Group2, Group3
+======|=======|======
+CMDR1,Cmdr2,Cmdr3
+cmdr4,Cmdr5,Cmdr6
+Cmdr7,,
 
 ## Running the bot
 
-Optimally you'll want the bot to run inside a screen or tmux session, automatically restarting its process if it happens to exit (i.e. if the adminUser tells it to /restart, it won't start up without being run again)
+Just run `./start.sh` and you're good to go.
 
-The best way to do that is a script that runs a `while true; do things; done` bash loop inside of screen.
+[more later, incl. example gdoc, better explanation of alignment emoji system)
 
-[to be continued]
+
+## Notes
+
+### The `emoji/` folder
+
+Upload these to your discord server and copy their IDs down. They're used by the bot.
+
+Only the alignment ones are used right now.
