@@ -7,16 +7,8 @@ See it in action: https://discord.gg/EF5qXdD
 Requirements:
 First, you'll need [nodejs](<https://nodejs.org/en/>).
 
-Then install the following via `npm`
-```
-discord.io
-mathjs
-request
-deasync
-jsonfile
-csvjson
-```
-Running `npm install discord.io mathjs request deasync jsonfile csvjson` in the bot's running directory should get you up and running.
+
+Running `npm install` in the bot's running directory should get you up and running.
  
 ## Configuration
 
