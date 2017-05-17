@@ -9,7 +9,7 @@
     "discord.io": "^2.5.1",
     "jsonfile": "^3.0.0",
     "mathjs": "^3.13.1",
-    "request": "^2.81.0"
+    "request": "^2.81.0",
     "config": "^1.26.1"
   },
   "devDependencies": {},
