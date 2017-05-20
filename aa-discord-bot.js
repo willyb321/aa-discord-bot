@@ -611,8 +611,9 @@ bot.on( 'ready', function() {
 	writeLog( "Add to your server using this link: ", "Discord" );
 	writeLog( " https://discordapp.com/oauth2/authorize?client_id=" + bot.id + "&scope=bot&permissions=104160256 ", "Discord" );
 	writeLog( "*** Bot ready! ***", "Discord" )
-	//bot.sendMessage( { to: configuration.discord.channelId, message: ":ok: <@" + configuration.discord.adminUserId + ">: Adle's Armada Discord Bot back online! Type `" + configuration.discord.commandPrefix + "help` for a list of commands."} )
-	//bot.sendMessage( { to: configuration.discord.secondChannelId, message: ":ok: <@" + configuration.discord.adminUserId + ">: Adle's Armada Discord Bot back online! Type `" + configuration.discord.commandPrefix + "help` for a list of commands."} )
+	bot.sendMessage( { to: configuration.discord.channelId, message: ":ok: <@" + configuration.discord.adminUserId + ">: Adle's Armada Discord Bot back online! Type `" + configuration.discord.commandPrefix + "help` for a list of commands."} )
+	bot.sendMessage( { to: configuration.discord.secondChannelId, message: ":ok: <@" + configuration.discord.adminUserId + ">: Adle's Armada Discord Bot back online! Type `" + configuration.discord.commandPrefix + "help` for a list of commands."} )
+	bot.sendMessage( { to: configuration.discord.testChannelID, message: ":ok: <@" + configuration.discord.adminUserId + ">: Adle's Armada Discord Bot back online! Type `" + configuration.discord.commandPrefix + "help` for a list of commands."} )
 	
 	bot.setPresence( { "game": { "name": configuration.discord.currentGame } } );
 	
@@ -627,7 +628,7 @@ bot.on( 'message', function( user, userId, channelId, message, event ) {
 	server = bot.servers[serverId].name
 	command = message.split( " ", 1 ).join( " " ).toLowerCase()
 	argument = message.split( " " ).slice( 1 ).join( " " )
-	writeLog( "<" + user + "> " + message, "Channel - "+server+"/"+channel )
+	writeLog( "<" + user + "> " + message, "Channel - "+server+"/"+channel,false) // don't log channels to file
 		
 	if ( command == configuration.discord.commandPrefix + "ping" ) { // send a message to the channel as a ping-testing thing.
 		bot.sendMessage( {
