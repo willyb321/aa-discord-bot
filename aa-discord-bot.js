@@ -1,6 +1,5 @@
 // AA Discord Bot
-// Version 2.4, by CMDR DJ Arghlex
-// adds dj death counter
+// by CMDR DJ Arghlex
 
 // DEPENDENCIES
 console.log( "Loading dependencies" )
@@ -16,17 +15,20 @@ var config = require( "config" ) // install using npm
 console.log( "Loading configuration" )
 var configuration = config.get( "configuration" )
 jsonfile.spaces = 4
-djRebuyCount = 0
-
+djRebuyCount = 654
+fchar = "\uD83C\uDDEB"
 // FUNCTIONS
 console.log( "Loading functions" )
 
 // core parts of the bot
-function writeLog( message, prefix ) {
-	prefix = typeof prefix !== "undefined" ? prefix : "Debug";
+function writeLog( message, prefix, writeToFile ) {
+	prefix = typeof prefix !== "undefined" ? prefix : "Debug"; // by default put [Debug] in front of the message
+	writeToFile = typeof writeToFile !== "undefined" ? writeToFile : true;	// log everything to file by default
 	wholeMessage = "[" + prefix + "] " + message
 	console.log( "  " + wholeMessage )
-	fs.appendFileSync( configuration.discord.logfile, wholeMessage + "\n" )
+	if (writeToFile == true ) {
+		fs.appendFileSync( configuration.discord.logfile, wholeMessage + "\n" )
+	}
 	return
 }
 
@@ -44,7 +46,7 @@ function getEngineerInfo() { // load our engineer info from our files
 	return database
 }
 function getInaraPage( page, callback ) { // grab a whole page's HTML from INARA, and return it all as a string
-	writeLog( "Retrieving INARA page: " + page, "HTTP" )
+	writeLog( "Retrieving INARA page: https://inara.cz/" + page, "HTTP" )
 	pageHandle = request.get( {
 		url: "https://inara.cz/" + page,
 		headers: {
@@ -81,11 +83,11 @@ function getGdocSheet( docId, sheetId ) { // grab a sheet in CSV from a gDocs sp
 		} )
 	} )
 	return csvjson.toObject( getGdocCsv( "https://docs.google.com/spreadsheets/d/" + docId + "/pub?single=true&output=tsv&gid=" + sheetId ), {
-		delimiter: "	"
+		delimiter: "\t"
 	} )
 }
 function getEdsmApiResult( page, callback ) { // query EDSM's api for something
-	writeLog( "Retrieving EDSM APIv1 results: " + page, "HTTP" )
+	writeLog( "Retrieving EDSM APIv1 results: https://www.edsm.net/api-v1/" + page, "HTTP" )
 	pageHandle = request.get( {
 		url: "https://www.edsm.net/api-v1/" + page,
 		headers: {
@@ -110,6 +112,9 @@ function getEmoji( emojiName ) { // return a properly formatted single-server di
 }
 function compareTwoNames( name1, name2 ) { // compare two names
 	// just try and see if they're equal right off the bat
+	if ( name1 == undefined || name2 == undefined ) {
+		return false
+	}
 	if ( name1 == name2 && name1 != "" && name2 != "" ) {
 		return true
 	}
@@ -178,76 +183,80 @@ function getCmdrInfoFromInara( name, callback ) { // search inara for a CMDR, do
 	cmdrDetailsNameRegexp = /<span class="pflheadersmall">CMDR<\/span> (.*?)<\/td>/i
 	cmdrDetailsAvatarRegexp = /<td rowspan="4" class="profileimage"><img src="(.*)"><\/td>/i
 	cmdrDetailsTableRegexp = /<span class="pflcellname">(.*?)<\/span><br>(.*?)<\/td>/gi
+	loginToSearchRegexp = /You must be logged in to view search results.../
 	returnedEmbedObject = {
 		timestamp: timestamp,
 		footer: {
 			icon_url: "https://github.com/ArghArgh200/aa-discord-bot/raw/master/images/logo.png",
 			"text": "Adle's Armada Bot by CMDR DJ Arghlex"
 		},
+		title: "Error!", 
+		description: ":x: No INARA profiles found.",
 		author: {
-			name: "INARA Profile Search Results",
-			icon_url: "https://github.com/ArghArgh200/aa-discord-bot/raw/master/images/logo.png"
+			name: "INARA Profile Search",
+			icon_url: "https://github.com/ArghArgh200/aa-discord-bot/raw/master/images/inarasearch.png"
 		},
 		fields: []
 	}
 	getInaraPage( "search?location=search&searchglobal=" + encodeURIComponent( name ), function( searchResults ) {
-		var searchResultsMatches = searchResults.match( searchResultsRegexp )
-		if ( searchResultsMatches == null ) {
-			returnedEmbedObject.title = ":x: **No INARA profiles found.**"
-			callback( returnedEmbedObject )
-		}
-		try {
-			getInaraPage( "cmdr/" + searchResultsMatches[ 1 ], function( cmdrDetails ) {
-				var cmdrDetailsNameMatches = cmdrDetails.match( cmdrDetailsNameRegexp )
-				var cmdrDetailsAvatarMatches = cmdrDetails.match( cmdrDetailsAvatarRegexp )
-				var inaraInfo = {
-					CMDR: cmdrDetailsNameMatches[ 1 ]
-				}
-				cmdrDetails.replace( cmdrDetailsTableRegexp, function( match, p1, p2, offset, string ) {
-					inaraInfo[ p1 ] = p2
-				} )
-				var inaraGroupAlignment = "unknown"
-				if ( inaraInfo.Power == "Yuri Grom" || inaraInfo.Power == "Archon Delaine" || inaraInfo.Allegiance == "Alliance" || inaraInfo.Power == "Edmund Mahon" || inaraInfo.Allegiance == "Empire" || inaraInfo.Power == "Arissa Lavigny-Duval" || inaraInfo.Power == "Zemina Torval" || inaraInfo.Power == "Denton Patreus" || inaraInfo.Power == "Aisling Duval" ) {
-					inaraGroupAlignment == "oldenemy"
-				}
-				if ( inaraInfo.Allegiance == "Federation" || inaraInfo.Power == "Zachary Hudson" || inaraInfo.Power == "Felicia Winters" ) {
-					inaraGroupAlignment == "friendly"
-				}
-				groupIndexes = getGdocSheet( configuration.googleDocs.googleDocLink, configuration.googleDocs.sheets.groupIndexes[ "Group Indexes" ].sheetId )
-				for ( var sheetRow in groupIndexes ) {
-					for ( var cell in groupIndexes[ sheetRow ] ) {
-						if ( groupIndexes[ sheetRow ][ cell ] != '' ) {
-							if ( inaraInfo.Wing == groupIndexes[ sheetRow ][ cell ] ) {
-								inaraGroupAlignment = cell
+		searchResultsMatches = searchResults.match( searchResultsRegexp )
+		loginToSearchMatches = searchResults.match( loginToSearchRegexp )
+		if ( loginToSearchMatches == null ) {
+			if ( searchResultsMatches == null ) {
+				callback( returnedEmbedObject )
+			} else {
+				getInaraPage( "cmdr/" + searchResultsMatches[ 1 ], function( cmdrDetails ) {
+					cmdrDetailsNameMatches = cmdrDetails.match( cmdrDetailsNameRegexp )
+					cmdrDetailsAvatarMatches = cmdrDetails.match( cmdrDetailsAvatarRegexp )
+					inaraInfo = {
+						CMDR: cmdrDetailsNameMatches[ 1 ]
+					}
+					cmdrDetails.replace( cmdrDetailsTableRegexp, function( match, p1, p2, offset, string ) {
+						inaraInfo[ p1 ] = p2
+					} )
+					inaraGroupAlignment = "unknown"
+					if ( inaraInfo.Power == "Yuri Grom" || inaraInfo.Power == "Archon Delaine" || inaraInfo.Allegiance == "Alliance" || inaraInfo.Power == "Edmund Mahon" || inaraInfo.Allegiance == "Empire" || inaraInfo.Power == "Arissa Lavigny-Duval" || inaraInfo.Power == "Zemina Torval" || inaraInfo.Power == "Denton Patreus" || inaraInfo.Power == "Aisling Duval" ) {
+						inaraGroupAlignment == "oldenemy"
+					}
+					if ( inaraInfo.Allegiance == "Federation" || inaraInfo.Power == "Zachary Hudson" || inaraInfo.Power == "Felicia Winters" ) {
+						inaraGroupAlignment == "friendly"
+					}
+					groupIndexes = getGdocSheet( configuration.googleDocs.googleDocLink, configuration.googleDocs.sheets.groupIndexes[ "Group Indexes" ].sheetId )
+					for ( var sheetRow in groupIndexes ) {
+						for ( var cell in groupIndexes[ sheetRow ] ) {
+							if ( groupIndexes[ sheetRow ][ cell ] != '' ) {
+								if ( inaraInfo.Wing == groupIndexes[ sheetRow ][ cell ] ) {
+									inaraGroupAlignment = cell
+								}
 							}
 						}
 					}
-				}
-				returnedEmbedObject.title = getEmoji( "alignment_" + inaraGroupAlignment ) + "**`CMDR " + inaraInfo.CMDR.toUpperCase() + "`**"
-				returnedEmbedObject.description = "*" + inaraInfo.Wing + "* -- " + inaraInfo.Allegiance + ", " + inaraInfo.Power
-				if (cmdrDetailsAvatarMatches != null ) {
-					if (cmdrDetailsAvatarMatches[1] != undefined) {
-						returnedEmbedObject.thumbnail = {url: "https://inara.cz/" + cmdrDetailsAvatarMatches[1]}
+					returnedEmbedObject.title = getEmoji( "alignment_" + inaraGroupAlignment ) + "**`CMDR " + inaraInfo.CMDR.toUpperCase() + "`**"
+					returnedEmbedObject.description = "*" + inaraInfo.Wing + "* -- " + inaraInfo.Allegiance + ", " + inaraInfo.Power
+					if (cmdrDetailsAvatarMatches != null ) {
+						if (cmdrDetailsAvatarMatches[1] != undefined) {
+							returnedEmbedObject.thumbnail = {url: "https://inara.cz/" + cmdrDetailsAvatarMatches[1]}
+						}
 					}
-				}
-				returnedEmbedObject.fields[0] = {name:"__Rank__",value:inaraInfo.Rank}
-				if ( inaraInfo.Role != "" ) {
-					returnedEmbedObject.fields.push({name:"__Occupation__",value:inaraInfo.Role})
-				}
-				if ( inaraInfo[ "Overall assets" ] != "&nbsp;" ) {
-					returnedEmbedObject.fields.push({name:"__Assets__" ,value: inaraInfo[ "Overall assets" ]})
-				}
-				if ( inaraInfo.Ship != "" ) {
-					addedField = {name:"__Ship__" ,value:inaraInfo.Ship}
-					if ( inaraInfo[ "Registered ship name" ] != "" ) {
-						addedField.value += ", the *" + inaraInfo[ "Registered ship name" ] + "*"
+					returnedEmbedObject.fields.push({name:"__Rank__",value:inaraInfo.Rank})
+					if ( inaraInfo.Role != "" ) {
+						returnedEmbedObject.fields.push({name:"__Occupation__",value:inaraInfo.Role})
 					}
-					returnedEmbedObject.fields.push(addedField)
-				}
-				callback( returnedEmbedObject )
-			} )
-		} catch ( err ) {
-			returnedEmbedObject.title = ":sos: <@" + configuration.discord.adminUserId + ">! An error occured:\ngetCmdrInfoFromInara(): `Error retrieving/parsing CMDR Profile: " + err + "`"
+					if ( inaraInfo[ "Overall assets" ] != "&nbsp;" ) {
+						returnedEmbedObject.fields.push({name:"__Assets__" ,value: inaraInfo[ "Overall assets" ]})
+					}
+					if ( inaraInfo.Ship != "" ) {
+						addedField = {name:"__Ship__" ,value:inaraInfo.Ship}
+						if ( inaraInfo[ "Registered ship name" ] != "" ) {
+							addedField.value += ", the *" + inaraInfo[ "Registered ship name" ] + "*"
+						}
+						returnedEmbedObject.fields.push(addedField)
+					}
+					callback( returnedEmbedObject )
+				} )
+			}
+		} else {
+			returnedEmbedObject.description = ":sos: **<@"+configuration.discord.adminUserId+">: An error occured: Need login creds to INARA updated! **"
 			callback( returnedEmbedObject )
 		}
 	} )
@@ -256,11 +265,15 @@ function getCmdrInfoFromInara( name, callback ) { // search inara for a CMDR, do
 function getCmdrInfoFromDatabase( name, callback ) { // search our databases for CMDR information and return part of a formatted message
 	rosters = {}
 	results = []
+	writeLog("Retrieving all sheets","CMDR-DB")
 	for ( var listobj in configuration.googleDocs.sheets.lists ) {
 		sheet = getGdocSheet( configuration.googleDocs.googleDocLink, configuration.googleDocs.sheets.lists[ listobj ].sheetId )
 		writeLog( "Searching " + listobj + " list...", "CMDR-DB" )
 		for ( var sheetRow in sheet ) {
 			if ( compareTwoNames( sheet[ sheetRow ].CMDR, name ) ) {
+				if ( sheet[sheetRow].Crimes == '' ) {
+					sheet[sheetRow].Crimes == "Enemy/Hostile"
+				}
 				if ( sheet[ sheetRow ].Group == '' ) {
 					sheet[ sheetRow ].Group = "Unknown/No Group"
 				}
@@ -281,6 +294,7 @@ function getCmdrInfoFromDatabase( name, callback ) { // search our databases for
 			}
 		}
 	}
+	writeLog("Retrieving all rosters","CMDR-DB")
 	for ( var listobj in configuration.googleDocs.sheets.rosters ) {
 		rosters[ listobj ] = {}
 		sheet = getGdocSheet( configuration.googleDocs.googleDocLink, configuration.googleDocs.sheets.rosters[ listobj ].sheetId )
@@ -307,6 +321,7 @@ function getCmdrInfoFromDatabase( name, callback ) { // search our databases for
 			}
 		}
 	}
+	writeLog("comparing name to all sources","CMDR-DB")
 	returnedEmbedObject = {
 		timestamp: timestamp,
 		footer: {
@@ -315,17 +330,14 @@ function getCmdrInfoFromDatabase( name, callback ) { // search our databases for
 		},
 		author: {
 			name: "CMDR Database Search Results",
-			icon_url: "https://github.com/ArghArgh200/aa-discord-bot/raw/master/images/logo.png"
+			icon_url: "https://github.com/ArghArgh200/aa-discord-bot/raw/master/images/cmdrsearch.png"
 		},
-		title: "CMDRs Found: `" + results.length + "`",
-		description: "[Submissions Form](https://adlesarmada.arghlex.net/kos/submit/) - [Spreadsheet](https://adlesarmada.arghlex.net/kos/spreadsheet/)",
-		thumbnail: {
-			url: "https://github.com/ArghArgh200/aa-discord-bot/raw/master/images/cmdrsearch.png"
-		},
+		title: "CMDRs Found: ` " + results.length + " `",
+		description: "[Submit a new KOS?](https://adlesarmada.arghlex.net/kos/submit/)",
 		fields: []
 	}
 	if ( results == [] ) {
-		returnedEmbedObject.title = ":x: **No CMDR Database results found.**"
+		returnedEmbedObject.description = ":x: No CMDR Database results found. \n [Submit a new KOS?](https://adlesarmada.arghlex.net/kos/submit/)"
 		returnedEmbedObject.fields = []
 	} else {
 		for ( var result in results ) {
@@ -337,6 +349,7 @@ function getCmdrInfoFromDatabase( name, callback ) { // search our databases for
 			returnedEmbedObject.fields.push( newField )
 		}
 	}
+	writeLog("done! sent to discord","CMDR-DB")
 	callback( returnedEmbedObject )
 }
 function searchEngineeringDatabase( input, callback ) { // search our engineering help pages for a string
@@ -346,6 +359,7 @@ function searchEngineeringDatabase( input, callback ) { // search our engineerin
 	if ( database == null ) {
 		callback( ":sos: **An error occured!**\n searchEngineeringDatabase(): `Engineering database failed to load!`" )
 	}
+	writeLog("Searching Engineering Database","EngHelp")
 	results = {
 		"Blueprints": [],
 		"Engineer Information": [],
@@ -436,14 +450,11 @@ function getDistanceBetweenTwoSystems( input, callback ) { // query EDSM twice t
 			"text": "Adle's Armada Bot by CMDR DJ Arghlex"
 		},
 		author: {
-			name: "Distance Finder",
-			icon_url: "https://github.com/ArghArgh200/aa-discord-bot/raw/master/images/logo.png"
+			name: "System Distance Finder",
+			icon_url: "https://github.com/ArghArgh200/aa-discord-bot/raw/master/images/edsmsearch.png"
 		},
-		title: "System Distance Finder",
-		description: "Finds distance between two systems.",
-		thumbnail: {
-			url: "https://github.com/ArghArgh200/aa-discord-bot/raw/master/images/edsmsearch.png"
-		},
+		title: "Error!",
+		description: ":SOS: An error occured.",
 		fields: []
 	}
 	try {
@@ -452,25 +463,30 @@ function getDistanceBetweenTwoSystems( input, callback ) { // query EDSM twice t
 	} catch ( err ) {
 		returnedEmbedObject.title = "Incorrect usage. Try `/system <system1>, <system2>` or `/help`"
 		callback( returnedEmbedObject )
+		return
 	}
 	getEdsmApiResult( "system?showCoordinates=1&systemName=" + encodeURIComponent( system1 ), function( system1info ) {
+		writeLog("Fetched information for "+system1,"EDSM SysDist")
 		if ( system1info.coords != undefined ) {
+			writeLog("Info for "+system1 + " looks OK","EDSM SysDist")
 			getEdsmApiResult( "system?showCoordinates=1&systemName=" + encodeURIComponent( system2 ), function( system2info ) {
+			writeLog("Fetched information for "+system2,"EDSM SysDist")
 				if ( system2info.coords != undefined ) {
+					writeLog("Info for "+system2 + " looks OK, calculating distance","EDSM SysDist")
 					system1coords = [ system1info.coords.x, system1info.coords.y, system1info.coords.z ]
 					system2coords = [ system2info.coords.x, system2info.coords.y, system2info.coords.z ]
 					distance = mathjs.distance( system1coords, system2coords ).toFixed( 2 )
-					returnedEmbedObject.fields[0]={}
-					returnedEmbedObject.fields[0].name = "__Distance between **" + system1 + "** and **" + system2 + "**__"
-					returnedEmbedObject.fields[0].value = "***```" + distance + "Ly```**"
+					returnedEmbedObject.title = "Distance between `" + system1 + "` and `" + system2 + "`"
+					returnedEmbedObject.description = "***```" + distance + "Ly```**"
+					writeLog("Distance between "+system1+" and "+system2+": "+distance+"Ly","EDSM SysDist")
 					callback( returnedEmbedObject )
 				} else {
-					returnedEmbedObject.title = "Could not locate second system!"
+					returnedEmbedObject.description = ":x: Could not locate one of the systems!"
 					callback( returnedEmbedObject )
 				}
 			} )
 		} else {
-			returnedEmbedObject.title = "Could not locate first system!"
+			returnedEmbedObject.description = ":x: Could not locate one of the systems!"
 			callback( returnedEmbedObject )
 		}
 	} )
@@ -480,20 +496,20 @@ function getInformationAboutSystem( input, callback ) { // query EDSM for the de
 		timestamp: timestamp,
 		footer: {
 			icon_url: "https://github.com/ArghArgh200/aa-discord-bot/raw/master/images/logo.png",
-			"text": "Adle's Armada Bot - Information from EDSM"
+			"text": "Adle's Armada Bot"
 		},
 		author: {
-			name: "CMDR Database Search Results",
-			icon_url: "https://github.com/ArghArgh200/aa-discord-bot/raw/master/images/logo.png"
+			name: "System Information",
+			icon_url: "https://github.com/ArghArgh200/aa-discord-bot/raw/master/images/edsmsearch.png"
 		},
-		description: "",
-		thumbnail: {
-			url: "https://github.com/ArghArgh200/aa-discord-bot/raw/master/images/edsmsearch.png"
-		},
+		title: "Error!",
+		description: ":x: No systems found.",
 		fields: []
 	}
 	getEdsmApiResult( "system?showId=1&showCoordinates=1&showPermit=1&showInformation=1&systemName=" + encodeURIComponent( input ), function( systeminfo ) {
+		writeLog("Got EDSM Info for "+input.toString(),"EDSM SysInfo")
 		if ( systeminfo.name != undefined ) {
+			writeLog("Info for "+input.toString() + " looks OK.","EDSM SysInfo")
 			
 			returnedEmbedObject.title= "System Information for __" +systeminfo.name+"__"
 			
@@ -501,9 +517,8 @@ function getInformationAboutSystem( input, callback ) { // query EDSM for the de
 			if ( systeminfo.information.eddbId != undefined ) {
 				returnedEmbedObject.description += "\nEDDB:  *<https://eddb.io/system/" + systeminfo.information.eddbId + ">*"
 			}
-			returnedEmbedObject.fields[ 0 ] = {name:'',value:''}
+			returnedEmbedObject.fields[ 0 ] = {name:"__Controlled by__",value:'<ERROR - CONTACT EDSM>'}
 			if ( systeminfo.information.faction != undefined ) {
-				returnedEmbedObject.fields[ 0 ].name = "__Controlled by__"
 				returnedEmbedObject.fields[ 0 ].value = systeminfo.information.faction
 			}
 			if ( systeminfo.information.allegiance != undefined ) {
@@ -526,8 +541,6 @@ function getInformationAboutSystem( input, callback ) { // query EDSM for the de
 			if ( systeminfo.information.economy != undefined ) {
 				returnedEmbedObject.fields.push({name:"__Economy__" , value: systeminfo.information.economy})
 			}
-		} else {
-			callback( "No system found." )
 		}
 		callback(returnedEmbedObject)
 	} )
@@ -540,13 +553,12 @@ function getCurrentGameTime( input, callback ) { // calculate current game time
 		},
 		author: {
 			name: "Current In-Game Time",
-			icon_url: "https://github.com/ArghArgh200/aa-discord-bot/raw/master/images/logo.png"
+			icon_url: "https://github.com/ArghArgh200/aa-discord-bot/raw/master/images/gametime.png"
 		},
 		title: "\n**```" + timestamp.replace( /T/, ' ' ).replace( /\..+/, '' ) + "```**",
 		fields: []
 	} )
 }
-
 function getLastDjDeaths ( input, callback ) { // list DJ deaths
 	writeLog ( "fetching list and making it pretty" , "DJDeaths" )
 	djDeaths = jsonfile.readFileSync( "./djdeaths.json" )
@@ -594,34 +606,29 @@ var bot = new Discord.Client( {
 	autorun: true
 } )
 bot.on( 'ready', function() {
-	writeLog( "Bot ready!", "Discord" )
 	writeLog( "User ID: " + bot.id + ", Bot User: " + bot.username, "Discord" )
 	writeLog( "Now only accepting messages from channelId: " + configuration.discord.channelId, "Discord" )
 	writeLog( "Add to your server using this link: ", "Discord" );
 	writeLog( " https://discordapp.com/oauth2/authorize?client_id=" + bot.id + "&scope=bot&permissions=104160256 ", "Discord" );
-	console.log( "bot working" )
+	writeLog( "*** Bot ready! ***", "Discord" )
 	//bot.sendMessage( { to: configuration.discord.channelId, message: ":ok: <@" + configuration.discord.adminUserId + ">: Adle's Armada Discord Bot back online! Type `" + configuration.discord.commandPrefix + "help` for a list of commands."} )
-	bot.setPresence( {
-		"game": {
-			"name": configuration.discord.currentGame
-		}
-	} );
-	bot.editNickname( {
-		serverID: configuration.discord.serverId,
-		userId: bot.id,
-		nick: configuration.discord.nickname
-	} )
+	//bot.sendMessage( { to: configuration.discord.secondChannelId, message: ":ok: <@" + configuration.discord.adminUserId + ">: Adle's Armada Discord Bot back online! Type `" + configuration.discord.commandPrefix + "help` for a list of commands."} )
+	
+	bot.setPresence( { "game": { "name": configuration.discord.currentGame } } );
+	
+	bot.editNickname( { serverID: configuration.discord.serverId, userId: bot.id, nick: configuration.discord.nickname } )
+	bot.editNickname( { serverID: configuration.discord.secondServerId, userId: bot.id, nick: configuration.discord.nickname } )
 } )
 bot.on( 'message', function( user, userId, channelId, message, event ) {
-	
-	
 	currenttime = new Date().toISOString()
 	timestamp = (parseInt(currenttime.split(/-(.+)/,2)[0])+1286)+"-"+currenttime.split(/-(.+)/,2)[1]
-	
-	
-	var command = message.split( " ", 1 ).join( " " ).toLowerCase()
-	var argument = message.split( " " ).slice( 1 ).join( " " )
-	writeLog( "<" + user + "> " + message, "Channel" )
+	serverId = bot.channels[channelId]["guild_id"]
+	channel = "#" + bot.channels[channelId].name
+	server = bot.servers[serverId].name
+	command = message.split( " ", 1 ).join( " " ).toLowerCase()
+	argument = message.split( " " ).slice( 1 ).join( " " )
+	writeLog( "<" + user + "> " + message, "Channel - "+server+"/"+channel )
+		
 	if ( command == configuration.discord.commandPrefix + "ping" ) { // send a message to the channel as a ping-testing thing.
 		bot.sendMessage( {
 			to: channelId,
@@ -635,6 +642,8 @@ bot.on( 'message', function( user, userId, channelId, message, event ) {
 		message += "`" + configuration.discord.commandPrefix + "time` - Returns current ingame date and time.\n"
 		if ( channelId == configuration.discord.channelId || channelId == configuration.discord.secondChannelId || channelId == configuration.discord.testChannelID ) { // only show KOS/INARA searcher if it's the right channel
 			message += "`" + configuration.discord.commandPrefix + "whois <cmdr>` - Searches the AA Database and INARA for <cmdr>\n    Support INARA! <https://inara.cz/>\n"
+		} else {
+			message += "`" + configuration.discord.commandPrefix + "whois <cmdr>` - Searches INARA for <cmdr>\n    Support INARA! <https://inara.cz/>\n"
 		}
 		message += "`" + configuration.discord.commandPrefix + "eng <query>` - Looks for <query> in the Engineering Database.\n    Support EDEngineer! <https://github.com/msarilar/EDEngineer/>\n"
 		message += "`" + configuration.discord.commandPrefix + "distance <system1>, <system2>` - Queries EDSM for the distance between two systems.\n"
@@ -648,6 +657,9 @@ bot.on( 'message', function( user, userId, channelId, message, event ) {
 			message += "`" + configuration.discord.commandPrefix + "setCmdPrefix <string>` - Sets prefix character(s) to <string> (resets to default after restart)\n"
 			message += "`" + configuration.discord.commandPrefix + "restart` - Restarts the bot.\n"
 		}
+		message += "\n**Other Commands/Responses/Memes**\n"
+		message += ":regional_indicator_f: - Pay your respects.\n"
+		message += "`/.*reee.*/` - Ask Maztek.\n"
 		message += "\nOpen source! Check out <https://github.com/ArghArgh200/aa-discord-bot>!\n"
 		message += "Donate to help cover running costs. Or not, I don't care. <https://arghlex.net/?page=donate>\n"
 		message += "Add this bot to your server! <https://discordapp.com/oauth2/authorize?client_id=283482763686969345&scope=bot&permissions=104160256>"
@@ -657,8 +669,8 @@ bot.on( 'message', function( user, userId, channelId, message, event ) {
 		} )
 		writeLog( "Sent help page", "Discord" )
 	}
-	if ( channelId == configuration.discord.channelId || channelId == configuration.discord.secondChannelId || channelId == configuration.discord.testChannelID ) { // AA-specific commands
-		if ( command == configuration.discord.commandPrefix + "whois" || command == configuration.discord.commandPrefix + "kos" ) { // KOS/INARA Searcher system
+	if ( command == configuration.discord.commandPrefix + "whois" || command == configuration.discord.commandPrefix + "kos" ) { // KOS/INARA Searcher system
+		if ( channelId == configuration.discord.channelId || channelId == configuration.discord.secondChannelId || channelId == configuration.discord.testChannelID ) {
 			try {
 				bot.simulateTyping( channelId )
 				getCmdrInfoFromDatabase( argument, function( embeddedObject ) {
@@ -673,19 +685,19 @@ bot.on( 'message', function( user, userId, channelId, message, event ) {
 					message: ":sos: <@" + configuration.discord.adminUserId + ">! An error occured:\nwhoisCmdr(): getCmdrInfoFromDatabase(): `" + err + "`"
 				} )
 			}
-			try {
-				getCmdrInfoFromInara( argument, function( embeddedObject ) {
-					bot.sendMessage( {
-						to: channelId,
-						"embed": embeddedObject
-					} )
-				} )
-			} catch ( err ) {
+		}
+		try {
+			getCmdrInfoFromInara( argument, function( embeddedObject ) {
 				bot.sendMessage( {
 					to: channelId,
-					message: ":sos: <@" + configuration.discord.adminUserId + ">! An error occured:\nwhoisCmdr(): getCmdrInfoFromInara(): `" + err + "`"
+					"embed": embeddedObject
 				} )
-			}
+			} )
+		} catch ( err ) {
+			bot.sendMessage( {
+				to: channelId,
+				message: ":sos: <@" + configuration.discord.adminUserId + ">! An error occured:\nwhoisCmdr(): getCmdrInfoFromInara(): `" + err + "`"
+			} )
 		}
 	}
 	if ( command == configuration.discord.commandPrefix + "eng" ) { // engineer database searcher
@@ -765,7 +777,7 @@ bot.on( 'message', function( user, userId, channelId, message, event ) {
 		}
 	}
 	if ( userId.toString() == configuration.discord.adminUserId ) { //admin commands, usable everywhere
-		if ( command.toLowerCase() == configuration.discord.commandPrefix + "adddjdeath" ) { // add DJ's deaths
+		if ( command == configuration.discord.commandPrefix + "adddjdeath" ) { // add DJ's deaths
 			try {
 				addDjDeath( argument, function( returnedmessage ) {
 					bot.sendMessage( {
@@ -824,15 +836,15 @@ bot.on( 'message', function( user, userId, channelId, message, event ) {
 		if ( command == configuration.discord.commandPrefix + "setnickname" ) {
 			try {
 				bot.editNickname( {
-					serverID: configuration.discord.serverId,
+					serverID: serverId,
 					userID: bot.id,
 					nick: argument.toString()
 				} )
 				bot.sendMessage( {
 					to: channelId,
-					message: "<@" + configuration.discord.adminUserId + ">:\n:ok: **Bot's nickname on AA servers set to:** `" + argument.toString() + "`"
+					message: "<@" + configuration.discord.adminUserId + ">:\n:ok: **Bot's nickname on this server ("+server+") set to:** `" + argument.toString() + "`"
 				} )
-				writeLog( "Nickname on server changed to: " + argument.toString(), "Discord" )
+				writeLog( "Nickname on "+server+" changed to: " + argument.toString(), "Discord" )
 			} catch ( err ) {
 				bot.sendMessage( {
 					to: channelId,
@@ -842,25 +854,41 @@ bot.on( 'message', function( user, userId, channelId, message, event ) {
 			}
 		}
 		if ( command == configuration.discord.commandPrefix + "restart" ) {
-			writeLog("Restarting because admin asked me to")
+			writeLog("Restarting (Restart command given by admin)")
 			process.exit( 0 )
 		}
 	}
-	for ( replaceCommand in configuration.discord.replaceCommands ) { // simple replace commands
-		if ( command == configuration.discord.commandPrefix + replaceCommand.toLowerCase() ) {
-			if ( argument == "" ) {
-				var prefixMessageWith = "<@" + userId + ">"
-			} else {
-				var prefixMessageWith = argument
+	if ( message == 'F' || message == 'f' || message == fchar ) { // pay respects
+		writeLog("Paying Respects","F")
+		bot.addReaction({channelID: channelId, messageID: event.d.id, reaction: fchar }, function (returned) { 
+			if (returned !== null) {
+				writeLog("Unable to pay respects. F. Reason: "+returned,"F")
 			}
-			bot.sendMessage( {
-				to: channelId,
-				message: ":gear::speech_left: " + prefixMessageWith + "\n" + configuration.discord.replaceCommands[ replaceCommand ]
-			} )
+		})
+	}
+	if ( serverId == configuration.discord.secondServerId || serverId == configuration.discord.serverId ) { // automatic messages
+		for ( replaceCommand in configuration.discord.replaceCommands ) {
+			if ( command == configuration.discord.commandPrefix + replaceCommand.toLowerCase() ) {
+				if ( argument == "" ) {
+					var prefixMessageWith = "<@" + userId + ">"
+				} else {
+					var prefixMessageWith = argument
+				}
+				bot.sendMessage( {
+					to: channelId,
+					message: ":gear::speech_left: " + prefixMessageWith + "\n" + configuration.discord.replaceCommands[ replaceCommand ]
+				} )
+			}
+		}
+	}
+	if ( bot.id !== userId ) { // developed upon request by Maztek
+		if ( message.match( /.*fuckin.*norm.*/i ) !== null || message.match( /.*reee.*/i ) !== null ) {
+			writeLog("FUCKING NORMIES","REEE")
+			bot.sendMessage( { to: channelId, message: "REEEEEEEEEEEEEE" } )
 		}
 	}
 } )
-bot.on( 'disconnect', function( errMessage, code ) {
+bot.on( 'disconnect', function( errMessage, code ) { // just hard-exit on disconnection
 	writeLog( "Disconnected from server! Code: " + code + ", Reason: " + errMessage, "Error" )
 	process.exit( 1 )
 } );
