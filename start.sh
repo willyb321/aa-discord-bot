@@ -1,29 +1,23 @@
 #!/bin/bash
+export NODE_ENV=production
 service="aa-discord-bot"
-restartdelay=3
+restartdelay=1
 processname="nodejs"
-processargs="-expose-gc $service.js"
+processargs="$service.js"
 cd ~/$service
 screen -wipe >/dev/null
 case "$1" in
 	start)
-		echo "$service started." &
+		broadcastmessage "$service started." &
 		while true; do
 			$processname $processargs
 			sleep $restartdelay
 		done
 		rm $service.pid
-		echo "$service stopped." &
+		broadcastmessage "$service stopped." &
 	;;
-	restart)
-		echo "$service restarting." &
-		screen -r $service -p $service -X stuff $'stop\n' &
-		sleep $restartdelay
-		killall -15 $processname
-		sleep $restartdelay
-		killall -9 $processname
-		sleep $restartdelay
-		$0
+	databaseparser)
+		python2 databaseparser.py > database.json
 	;;
 	*)
 		mypid=`cat ~/$service/$service.pid 2>/dev/null`
@@ -32,7 +26,7 @@ case "$1" in
 			if [ -n "$reallymypid" ]; then
 				echo "$service is already running, pid '$mypid'"
 			else
-				echo "$service stale pidfile found"
+				broadcastmessage "$service stale pidfile found"
 				rm ~/$service/$service.pid
 				$0
 			fi

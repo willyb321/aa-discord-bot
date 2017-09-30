@@ -35,3 +35,10 @@ jspm_packages
 
 # Optional REPL history
 .node_repl_history
+
+# python bits n pieces
+.py[cod]
+
+#project-specific ignores to prevent ... mishaps
+config/production.json
+database.json

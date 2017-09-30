@@ -1,74 +1,28 @@
 {"configuration": {
-    "discord": {
         "emojiReplaces": {
-            "alignment_ally": "0",
-            "alignment_enemy": "0",
-            "alignment_friendly": "0",
-            "alignment_neutral": "0",
-            "alignment_oldenemy": "0",
-            "alignment_owngroup": "0",
-            "alignment_possibleenemy": "0",
-            "alignment_unknown": "0",
+			"alignment_enemy": "0",
+			"alignment_neutral": "0",
+			"alignment_ally": "0",
+			"alignment_oldenemy": "0",
+			"alignment_possibleenemy": "0",
+			"alignment_friendly": "0",
+			"alignment_unknown": "0",
+			"alignment_removed": "0",
+			"alignment_watch": "0",
+			"alignment_owngroup": "0"
         },
         "commandPrefix": "/",
         "logfile": "./aa-discord-bot.log",
         "authToken": "Paste your auth token from discordapp's bot page here.",
-        "testChannelId": "0",
-        "adminUserId": "0",
-        "secondServerId": "0",
-        "secondChannelId": "0",
-        "channelId": "0",
-        "serverId": "0",
+        "adminUserId": "admin's Discord UserID",
+        "channelId": "channelID of channel you're locking CMDR-DB lookups to", 
+        "serverId": "serverID that automatic messages are locked to",
         "nickname": "Bot Nickname Here",
         "currentGame": "Example Current Game Status Message Set on Bot Start",
         "replaceCommands": {
-            "replace1": "This will automatically have a message sent (with an optional few words before it) whenever you run the command `/replace1`",
-        }
-    },
-    "inara": {
-        "cookieElitesheet": "Get this from your cookie storage in your browser. Should be from inara.cz, called 'elitesheet'",
-        "cookieEsid": "Get this from your cookie storage in your browser. Should be from inara.cz, called 'esid'"
-    },
-    "googleDocs": {
-        "sheets": {
-            "rosters": {
-                "Allied Player": {
-                    "sheetId": "0",
-                    "association": "ally"
-                },
-                "Enemy Player": {
-                    "sheetId": "0",
-                    "association": "enemy"
-                },
-                "Own Group": {
-                    "sheetId": "0",
-                    "association": "owngroup"
-                }
-            },
-            "lists": {
-                "Primary KOS List": {
-                    "sheetId": "0",
-                    "association": "enemy"
-                },
-                "Requested KOSes": {
-                    "sheetId": "0",
-                    "association": "possibleenemy"
-                },
-                "Old KOS System": {
-                    "sheetId": "0",
-                    "association": "oldenemy"
-                },
-                "Friendly/Neutral Players": {
-                    "sheetId": "0",
-                    "association": "friendly"
-                }
-            },
-            "groupIndexes": {
-                "Group Indexes": {
-                    "sheetId": "0"
-                }
-            }
+            "replace1": "This will automatically have a message sent (with an optional few words before it) whenever you say `/replace1` in a channel"
         },
-        "googleDocLink": "0"
+        "inaraCookieElitesheet": "Get this from your cookie storage in your browser. Should be from inara.cz, called 'elitesheet'",
+        "inaraCookieEsid": "Get this from your cookie storage in your browser. Should be from inara.cz, called 'esid'"
     }
-}}
+}
